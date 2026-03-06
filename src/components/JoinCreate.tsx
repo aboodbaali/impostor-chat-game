@@ -69,13 +69,13 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-xl max-w-md mx-auto w-full"
+      className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xl max-w-md mx-auto w-full"
     >
       <div className="flex gap-4 mb-8">
         <button
           onClick={() => setMode('JOIN')}
           className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-            mode === 'JOIN' ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            mode === 'JOIN' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
           }`}
         >
           <Users size={18} /> Join Room
@@ -83,7 +83,7 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
         <button
           onClick={() => setMode('CREATE')}
           className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-            mode === 'CREATE' ? 'bg-emerald-500 text-zinc-950' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            mode === 'CREATE' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
           }`}
         >
           <UserPlus size={18} /> Create Room
@@ -93,14 +93,14 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'JOIN' && (
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Room Code</label>
+            <label className="block text-sm font-medium text-slate-500 mb-1">Room Code</label>
             <input
               type="text"
               required
               value={roomId}
               onChange={(e) => setRoomId(e.target.value.toUpperCase())}
               placeholder="e.g. A1B2C3"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 uppercase"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/50 uppercase"
             />
           </div>
         )}
@@ -108,7 +108,7 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
         <div className="flex justify-center mb-4">
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-24 h-24 rounded-full bg-zinc-950 border-2 border-dashed border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all overflow-hidden relative group"
+            className="w-24 h-24 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-sky-500/50 hover:bg-slate-100/50 transition-all overflow-hidden relative group"
           >
             {photoUrl ? (
               <>
@@ -119,8 +119,8 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
               </>
             ) : (
               <>
-                <User size={24} className="text-zinc-500 mb-1" />
-                <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Photo</span>
+                <User size={24} className="text-slate-400 mb-1" />
+                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Photo</span>
               </>
             )}
           </div>
@@ -134,44 +134,44 @@ export default function JoinCreate({ onCreate, onJoin }: JoinCreateProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Your Real Name</label>
+          <label className="block text-sm font-medium text-slate-500 mb-1">Your Real Name</label>
           <input
             type="text"
             required
             value={realName}
             onChange={(e) => setRealName(e.target.value)}
             placeholder="John Doe"
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Fake Nickname</label>
+          <label className="block text-sm font-medium text-slate-500 mb-1">Fake Nickname</label>
           <input
             type="text"
             required
             value={fakeNickname}
             onChange={(e) => setFakeNickname(e.target.value)}
             placeholder="MysteryMan99"
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Short Bio/Hint (Deceptive)</label>
+          <label className="block text-sm font-medium text-slate-500 mb-1">Short Bio/Hint (Deceptive)</label>
           <textarea
             required
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="I love cats and coding..."
             rows={3}
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/50 resize-none"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-4 rounded-xl transition-colors mt-4"
+          className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-4 rounded-xl transition-colors mt-4 shadow-md"
         >
           {mode === 'JOIN' ? 'Join Game' : 'Create Game'}
         </button>

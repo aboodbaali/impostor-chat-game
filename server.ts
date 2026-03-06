@@ -35,6 +35,7 @@ interface Room {
   chatHistory: Message[];
   timer: number;
   timerInterval?: NodeJS.Timeout;
+  chatDuration?: number;
   votes: Record<string, string>; // voterId -> votedId
   detectiveId: string | null;
   targetId: string | null;
@@ -126,16 +127,31 @@ async function startServer() {
       callback({ success: true, roomId, room: getSanitizedRoom(room, socket.id) });
     });
 
-    socket.on('startGame', (roomId) => {
+    socket.on('startGame', ({ roomId, chatDuration }) => {
       const room = rooms[roomId];
       if (!room || room.players.find(p => p.id === socket.id)?.isHost !== true) return;
       
-      if (room.players.length < 3) {
-        // For testing, we can allow 2, but let's enforce 3 for real game, or just allow 2 for easier testing.
-        // Let's allow 2 for testing purposes.
-      }
+      room.chatDuration = chatDuration || 120;
 
       startChatPhase(room);
+    });
+
+    socket.on('restartGame', (roomId) => {
+      const room = rooms[roomId];
+      if (!room || room.players.find(p => p.id === socket.id)?.isHost !== true) return;
+      
+      room.state = 'LOBBY';
+      room.chatHistory = [];
+      room.timer = 0;
+      room.votes = {};
+      room.detectiveId = null;
+      room.targetId = null;
+      room.winnerIds = [];
+      room.players.forEach(p => {
+        p.isEliminated = false;
+      });
+      
+      io.to(roomId).emit('roomUpdated', getSanitizedRoom(room));
     });
 
     socket.on('sendMessage', ({ roomId, text }) => {
@@ -169,7 +185,9 @@ async function startServer() {
       
       // Check if everyone alive has voted
       const alivePlayers = room.players.filter(p => !p.isEliminated);
-      if (Object.keys(room.votes).length === alivePlayers.length) {
+      const votesCount = Object.keys(room.votes).filter(voterId => room.players.find(p => p.id === voterId && !p.isEliminated)).length;
+      
+      if (votesCount >= alivePlayers.length) {
         endVotingPhase(room);
       } else {
         io.to(roomId).emit('roomUpdated', getSanitizedRoom(room));
@@ -193,16 +211,18 @@ async function startServer() {
       
       if (!target || !detective) return;
 
-      // Check guess (case insensitive)
-      const isCorrect = target.realName.toLowerCase() === guess.toLowerCase();
+      // Check guess (case insensitive and trimmed)
+      const safeGuess = (guess || '').trim().toLowerCase();
+      const actualName = (target.realName || '').trim().toLowerCase();
+      const isCorrect = actualName === safeGuess;
       
       let systemMsg = '';
       if (isCorrect) {
         target.isEliminated = true;
-        systemMsg = `${detective.fakeNickname} correctly guessed that ${target.fakeNickname} is ${target.realName}! ${target.fakeNickname} is eliminated.`;
+        systemMsg = `🎯 ${detective.fakeNickname} correctly guessed that ${target.fakeNickname} is ${target.realName}! ${target.fakeNickname} is eliminated.`;
       } else {
         detective.isEliminated = true;
-        systemMsg = `${detective.fakeNickname} incorrectly guessed ${target.fakeNickname}'s identity! ${detective.fakeNickname} is eliminated.`;
+        systemMsg = `❌ ${detective.fakeNickname} incorrectly guessed ${target.fakeNickname}'s identity! ${detective.fakeNickname} is eliminated.`;
       }
 
       addSystemMessage(room, systemMsg);
@@ -210,7 +230,9 @@ async function startServer() {
       // Clear interval if any
       if (room.timerInterval) clearInterval(room.timerInterval);
 
-      checkWinCondition(room);
+      if (!checkWinCondition(room)) {
+        startChatPhase(room);
+      }
     });
 
     socket.on('disconnect', () => {
@@ -233,11 +255,29 @@ async function startServer() {
               io.to(roomId).emit('roomUpdated', getSanitizedRoom(room));
             }
           } else {
-            // Mark as disconnected but keep in game
-            room.players[playerIndex].isDisconnected = true;
-            room.players[playerIndex].isEliminated = true; // Effectively eliminated
-            addSystemMessage(room, `${room.players[playerIndex].fakeNickname} disconnected and was eliminated.`);
-            checkWinCondition(room);
+            const player = room.players[playerIndex];
+            player.isDisconnected = true;
+            if (!player.isEliminated) {
+              player.isEliminated = true;
+              addSystemMessage(room, `🔌 ${player.fakeNickname} disconnected and was eliminated.`);
+              
+              if (!checkWinCondition(room)) {
+                if (room.state === 'ELIMINATION' && room.detectiveId === player.id) {
+                  if (room.timerInterval) clearInterval(room.timerInterval);
+                  startChatPhase(room);
+                } else if (room.state === 'VOTING') {
+                  const alivePlayers = room.players.filter(p => !p.isEliminated);
+                  const votesCount = Object.keys(room.votes).filter(voterId => room.players.find(p => p.id === voterId && !p.isEliminated)).length;
+                  if (votesCount >= alivePlayers.length) {
+                    endVotingPhase(room);
+                  } else {
+                    io.to(roomId).emit('roomUpdated', getSanitizedRoom(room));
+                  }
+                } else {
+                  io.to(roomId).emit('roomUpdated', getSanitizedRoom(room));
+                }
+              }
+            }
           }
         }
       }
@@ -248,7 +288,7 @@ async function startServer() {
 
   function startChatPhase(room: Room) {
     room.state = 'CHATTING';
-    room.timer = CHAT_TIME_SECONDS;
+    room.timer = room.chatDuration || CHAT_TIME_SECONDS;
     room.votes = {};
     room.detectiveId = null;
     room.targetId = null;
@@ -292,45 +332,46 @@ async function startServer() {
   function endVotingPhase(room: Room) {
     if (room.timerInterval) clearInterval(room.timerInterval);
     
-    // Tally votes
+    // Tally votes ONLY for alive players
     const voteCounts: Record<string, number> = {};
+    const alivePlayers = room.players.filter(p => !p.isEliminated);
+    const aliveIds = new Set(alivePlayers.map(p => p.id));
+
     for (const voterId in room.votes) {
+      if (!aliveIds.has(voterId)) continue;
       const votedId = room.votes[voterId];
+      if (!aliveIds.has(votedId)) continue;
+      
       voteCounts[votedId] = (voteCounts[votedId] || 0) + 1;
     }
 
     let maxVotes = 0;
-    let detectiveId: string | null = null;
-    let tie = false;
+    let tiedIds: string[] = [];
 
     for (const [id, count] of Object.entries(voteCounts)) {
       if (count > maxVotes) {
         maxVotes = count;
-        detectiveId = id;
-        tie = false;
+        tiedIds = [id];
       } else if (count === maxVotes) {
-        tie = true;
+        tiedIds.push(id);
       }
     }
 
-    // If tie or no votes, pick random alive player
-    if (tie || !detectiveId) {
-      const alivePlayers = room.players.filter(p => !p.isEliminated);
-      if (alivePlayers.length > 0) {
-        detectiveId = alivePlayers[Math.floor(Math.random() * alivePlayers.length)].id;
-        addSystemMessage(room, 'The vote was a tie (or no votes). A detective was chosen at random.');
-      }
+    let detectiveId: string | null = null;
+
+    if (maxVotes > 0) {
+      detectiveId = tiedIds[Math.floor(Math.random() * tiedIds.length)];
     }
 
     if (detectiveId) {
       const detective = room.players.find(p => p.id === detectiveId);
       if (detective) {
-        addSystemMessage(room, `${detective.fakeNickname} has been chosen as the Detective!`);
+        addSystemMessage(room, `📊 Voting ended! ${detective.fakeNickname} received the most votes and is the Detective!`);
         startEliminationPhase(room, detectiveId);
       }
     } else {
-      // Should not happen unless everyone is dead
-      checkWinCondition(room);
+      addSystemMessage(room, '🤷 No valid votes were cast! Skipping elimination phase.');
+      startChatPhase(room);
     }
   }
 
@@ -353,32 +394,30 @@ async function startServer() {
         const detective = room.players.find(p => p.id === detectiveId);
         if (detective) {
           detective.isEliminated = true;
-          addSystemMessage(room, `${detective.fakeNickname} ran out of time and was eliminated!`);
+          addSystemMessage(room, `⏰ ${detective.fakeNickname} ran out of time and was eliminated!`);
         }
-        checkWinCondition(room);
+        if (!checkWinCondition(room)) {
+          startChatPhase(room);
+        }
       }
     }, 1000);
   }
 
-  function checkWinCondition(room: Room) {
+  function checkWinCondition(room: Room): boolean {
     const alivePlayers = room.players.filter(p => !p.isEliminated);
     
     if (alivePlayers.length <= 2) {
       room.state = 'GAME_OVER';
       room.winnerIds = alivePlayers.map(p => p.id);
+      if (room.timerInterval) clearInterval(room.timerInterval);
       
       const winnerNames = alivePlayers.map(p => `${p.fakeNickname} (${p.realName})`).join(' and ');
-      addSystemMessage(room, `Game Over! The survivors are: ${winnerNames || 'No one'}.`);
+      addSystemMessage(room, `🏆 Game Over! The survivors are: ${winnerNames || 'No one'}.`);
       
       io.to(room.id).emit('roomUpdated', getSanitizedRoom(room));
-    } else {
-      // Start next round
-      setTimeout(() => {
-        startChatPhase(room);
-      }, 5000); // 5 second pause before next round
-      
-      io.to(room.id).emit('roomUpdated', getSanitizedRoom(room));
+      return true;
     }
+    return false;
   }
 
   function addSystemMessage(room: Room, text: string) {
