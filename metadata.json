@@ -1,0 +1,5 @@
+{
+  "name": "The Impostor's Chat",
+  "description": "A social deduction chat game where friends join anonymously, chat, and try to guess each other's real identities.",
+  "requestFramePermissions": []
+}
