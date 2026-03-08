@@ -23,20 +23,21 @@ export default function Voting({ room, myPlayer, timer, onVote }: VotingProps) {
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-10 shadow-2xl w-full max-w-2xl mx-auto flex flex-col items-center"
+      className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-2xl w-full max-w-2xl mx-auto flex flex-col items-center"
+      dir="rtl"
     >
-      <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+      <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
         <AlertTriangle size={40} className="text-red-500" />
       </div>
       
-      <h2 className="text-3xl font-bold text-zinc-100 mb-2 text-center">Voting Phase</h2>
-      <p className="text-zinc-400 text-center mb-8 max-w-md">
-        Time is up! Who do you think is acting suspicious? Vote for the player you want to become the Detective.
+      <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center">مرحلة التصويت</h2>
+      <p className="text-slate-500 text-center mb-8 max-w-md">
+        انتهى الوقت! من تعتقد أنه يتصرف بغرابة؟ صوّت للاعب الذي تريده أن يصبح المحقق.
       </p>
 
-      <div className="flex items-center gap-3 bg-zinc-950 px-6 py-3 rounded-2xl border border-zinc-800 mb-10">
-        <Clock size={20} className={timer < 10 ? 'text-red-500 animate-pulse' : 'text-emerald-500'} />
-        <span className={`text-2xl font-mono font-bold ${timer < 10 ? 'text-red-400' : 'text-emerald-400'}`}>
+      <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-200 mb-10 shadow-sm" dir="ltr">
+        <Clock size={20} className={timer < 10 ? 'text-red-500 animate-pulse' : 'text-sky-500'} />
+        <span className={`text-2xl font-mono font-bold ${timer < 10 ? 'text-red-500' : 'text-sky-500'}`}>
           {formatTime(timer)}
         </span>
       </div>
@@ -53,34 +54,34 @@ export default function Voting({ room, myPlayer, timer, onVote }: VotingProps) {
               disabled={isMe || myPlayer?.isEliminated}
               className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${
                 isVoted 
-                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                  ? 'bg-sky-50 border-sky-500 text-sky-900 shadow-[0_0_15px_rgba(14,165,233,0.2)]' 
                   : isMe 
-                    ? 'bg-zinc-950 border-zinc-800 text-zinc-500 opacity-50 cursor-not-allowed'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600'
+                    ? 'bg-slate-50 border-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-3 text-left">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="flex items-center gap-3 text-right">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                   {player.photoUrl ? (
                     <img src={player.photoUrl} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User size={20} className="text-zinc-500" />
+                    <User size={20} className="text-slate-400" />
                   )}
                 </div>
                 <div className="flex flex-col">
                   <span className="font-bold text-lg">{player.fakeNickname}</span>
-                  <span className="text-xs text-zinc-500 truncate max-w-[150px]">{player.bio}</span>
+                  <span className="text-xs text-slate-500 truncate max-w-[150px]">{player.bio}</span>
                 </div>
               </div>
-              {isVoted && <Vote size={24} className="text-emerald-500" />}
+              {isVoted && <Vote size={24} className="text-sky-500" />}
             </button>
           );
         })}
       </div>
 
       {myPlayer?.isEliminated && (
-        <div className="mt-8 text-zinc-500 bg-zinc-950 px-6 py-3 rounded-xl border border-zinc-800">
-          You are eliminated and cannot vote.
+        <div className="mt-8 text-slate-500 bg-slate-50 px-6 py-3 rounded-xl border border-slate-200">
+          أنت مقصى ولا يمكنك التصويت.
         </div>
       )}
     </motion.div>
