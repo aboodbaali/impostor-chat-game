@@ -5,7 +5,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
-const PORT = 3000;
+const PORT = 4000;
 
 // Admin Token and Password
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'flan-admin-secret-url-2026';
